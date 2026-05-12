@@ -126,11 +126,11 @@ async fn stream_connected_websocket(
             }
             msg = read.next() => {
                 match msg {
-                    Some(Ok(Message::Text(text))) => emit_json_lines(stdout, &text).await?,
+                    Some(Ok(Message::Text(text))) => emit_json_lines(stdout, &text, script).await?,
                     Some(Ok(Message::Binary(bytes))) => {
                         let text = String::from_utf8(bytes)
                             .with_context(|| format!("non-utf8 binary WebSocket message for {script}"))?;
-                        emit_json_lines(stdout, &text).await?;
+                        emit_json_lines(stdout, &text, script).await?;
                     }
                     Some(Ok(Message::Close(frame))) => {
                         tracing::info!(script, ?frame, "Cloudflare tail WebSocket closed");
@@ -162,18 +162,29 @@ async fn sleep_until(deadline: Instant) {
     tokio::time::sleep_until(deadline).await;
 }
 
-pub async fn emit_json_lines(stdout: &Output, raw: &str) -> Result<()> {
+pub async fn emit_json_lines(stdout: &Output, raw: &str, script: &str) -> Result<()> {
     let parsed: Value = serde_json::from_str(raw).context("parsing WebSocket JSON message")?;
     let mut out = stdout.lock().await;
     match parsed {
         Value::Array(items) => {
-            for item in items {
+            for mut item in items {
+                stamp_script_name(&mut item, script);
                 write_json_line(&mut out, &item).await?;
             }
         }
-        value => write_json_line(&mut out, &value).await?,
+        mut value => {
+            stamp_script_name(&mut value, script);
+            write_json_line(&mut out, &value).await?;
+        }
     }
     Ok(())
+}
+
+fn stamp_script_name(value: &mut Value, script: &str) {
+    if let Value::Object(obj) = value {
+        obj.entry("scriptName")
+            .or_insert_with(|| Value::String(script.to_string()));
+    }
 }
 
 async fn write_json_line(out: &mut tokio::io::Stdout, value: &Value) -> Result<()> {
@@ -244,5 +255,19 @@ mod tests {
             .await
             .unwrap();
         rx.await.unwrap();
+    }
+
+    #[test]
+    fn stamp_script_name_adds_missing_worker_name() {
+        let mut value = serde_json::json!({ "outcome": "ok" });
+        stamp_script_name(&mut value, "ipogrid");
+        assert_eq!(value["scriptName"], "ipogrid");
+    }
+
+    #[test]
+    fn stamp_script_name_preserves_existing_worker_name() {
+        let mut value = serde_json::json!({ "scriptName": "from-api" });
+        stamp_script_name(&mut value, "from-session");
+        assert_eq!(value["scriptName"], "from-api");
     }
 }
