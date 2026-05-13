@@ -92,6 +92,11 @@ fn assert_tail_event_shape(event: &Value, expected_script: &str) {
     }
 }
 
+fn stop_child(child: &mut std::process::Child) {
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
 #[test]
 fn fixture_tail_events_match_expected_shape() {
     let fixtures = [
@@ -171,19 +176,19 @@ fn emits_live_events_with_script_name_when_configured() {
     let line = match rx.recv_timeout(Duration::from_secs(90)) {
         Ok(Ok(line)) => line,
         Ok(Err(err)) => {
-            let _ = child.kill();
+            stop_child(&mut child);
             panic!("{err}");
         }
         Err(mpsc::RecvTimeoutError::Timeout) => {
-            let _ = child.kill();
+            stop_child(&mut child);
             panic!("timed out waiting for a live Cloudflare tail event for {script}");
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => {
-            let _ = child.kill();
+            stop_child(&mut child);
             panic!("live event reader disconnected");
         }
     };
-    let _ = child.kill();
+    stop_child(&mut child);
     let event: Value = serde_json::from_str(&line).expect("event is JSON");
     assert_tail_event_shape(&event, script.as_str());
 }
