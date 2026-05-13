@@ -78,6 +78,17 @@ fn assert_tail_event_shape(event: &Value, expected_script: &str) {
             ex_obj.get("message").and_then(Value::as_str).is_some(),
             "exception entry should include a message string"
         );
+        assert!(
+            ex_obj.get("timestamp").and_then(Value::as_i64).is_some()
+                || ex_obj.get("timestamp").and_then(Value::as_u64).is_some(),
+            "exception entry should include a numeric timestamp"
+        );
+        if let Some(stack) = ex_obj.get("stack") {
+            assert!(
+                stack.as_str().is_some_and(|s| !s.is_empty()),
+                "exception stack should be a non-empty string when present"
+            );
+        }
     }
 }
 
@@ -98,7 +109,7 @@ fn fixture_tail_events_match_expected_shape() {
         ),
         (
             include_str!("fixtures/worker-exception.json"),
-            "fixture-worker",
+            "logtura-tail-shape-fixture",
         ),
     ];
 

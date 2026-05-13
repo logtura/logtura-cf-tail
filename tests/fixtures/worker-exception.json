@@ -1,25 +1,37 @@
 {
-  "scriptName": "fixture-worker",
+  "scriptName": "logtura-tail-shape-fixture",
   "outcome": "exception",
-  "eventTimestamp": 1778632023000,
+  "eventTimestamp": 1778632495006,
   "event": {
     "request": {
       "method": "GET",
-      "url": "https://example.test/"
+      "url": "https://logtura-tail-shape-fixture.example.workers.dev/"
+    },
+    "response": {
+      "status": 500
     }
   },
   "logs": [
     {
       "level": "error",
-      "message": ["queue dispatch failed"],
-      "timestamp": 1778632023001
+      "message": [
+        "logtura-tail-exception-shape",
+        {
+          "marker": "fixture",
+          "nested": {
+            "ok": false
+          }
+        }
+      ],
+      "timestamp": 1778632495006
     }
   ],
   "exceptions": [
     {
       "name": "Error",
-      "message": "Queue send failed",
-      "timestamp": 1778632023002
+      "message": "logtura tail fixture boom",
+      "stack": "    at Object.fetch (index.js:5:11)",
+      "timestamp": 1778632495006
     }
   ]
 }
