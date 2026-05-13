@@ -1,0 +1,25 @@
+{
+  "scriptName": "fixture-worker",
+  "outcome": "exception",
+  "eventTimestamp": 1778632023000,
+  "event": {
+    "request": {
+      "method": "GET",
+      "url": "https://example.test/"
+    }
+  },
+  "logs": [
+    {
+      "level": "error",
+      "message": ["queue dispatch failed"],
+      "timestamp": 1778632023001
+    }
+  ],
+  "exceptions": [
+    {
+      "name": "Error",
+      "message": "Queue send failed",
+      "timestamp": 1778632023002
+    }
+  ]
+}

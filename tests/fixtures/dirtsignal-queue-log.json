@@ -1,0 +1,25 @@
+{
+  "scriptName": "dirtsignal",
+  "outcome": "ok",
+  "eventTimestamp": 1778632023181,
+  "event": {
+    "batchSize": 1,
+    "queue": "dirtsignal-ingestion"
+  },
+  "logs": [
+    {
+      "level": "info",
+      "message": [
+        "[dispatch:skip-inflight]",
+        {
+          "ms": 82,
+          "pipeline": "acclaim",
+          "runId": "run_rhrcUjW0kigp6XS",
+          "source_id": "us_fl_lake_county_clerk"
+        }
+      ],
+      "timestamp": 1778632023336
+    }
+  ],
+  "exceptions": []
+}

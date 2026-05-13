@@ -14,6 +14,100 @@ fn live_env() -> Option<(String, String, String)> {
     Some((account_id, api_token, script))
 }
 
+fn assert_tail_event_shape(event: &Value, expected_script: &str) {
+    let obj = event.as_object().expect("tail event is a JSON object");
+    assert_eq!(
+        obj.get("scriptName").and_then(Value::as_str),
+        Some(expected_script),
+        "tail event should include the worker script name"
+    );
+    assert!(
+        obj.get("outcome")
+            .and_then(Value::as_str)
+            .is_some_and(|s| !s.is_empty()),
+        "tail event should include a non-empty outcome"
+    );
+    assert!(
+        obj.get("eventTimestamp").and_then(Value::as_i64).is_some()
+            || obj.get("eventTimestamp").and_then(Value::as_u64).is_some(),
+        "tail event should include a numeric eventTimestamp"
+    );
+    assert!(
+        obj.get("logs").and_then(Value::as_array).is_some(),
+        "tail event should include logs as an array"
+    );
+    assert!(
+        obj.get("exceptions").and_then(Value::as_array).is_some(),
+        "tail event should include exceptions as an array"
+    );
+    assert!(
+        obj.get("event").is_some(),
+        "tail event should include the Cloudflare event envelope"
+    );
+
+    for log in obj.get("logs").and_then(Value::as_array).unwrap() {
+        let log_obj = log.as_object().expect("log entry is an object");
+        assert!(
+            log_obj
+                .get("level")
+                .and_then(Value::as_str)
+                .is_some_and(|s| !s.is_empty()),
+            "log entry should include a non-empty level"
+        );
+        assert!(
+            log_obj.get("message").and_then(Value::as_array).is_some(),
+            "log entry should include message as an array"
+        );
+        assert!(
+            log_obj.get("timestamp").and_then(Value::as_i64).is_some()
+                || log_obj.get("timestamp").and_then(Value::as_u64).is_some(),
+            "log entry should include a numeric timestamp"
+        );
+    }
+
+    for exception in obj.get("exceptions").and_then(Value::as_array).unwrap() {
+        let ex_obj = exception.as_object().expect("exception entry is an object");
+        assert!(
+            ex_obj
+                .get("name")
+                .and_then(Value::as_str)
+                .is_some_and(|s| !s.is_empty()),
+            "exception entry should include a non-empty name"
+        );
+        assert!(
+            ex_obj.get("message").and_then(Value::as_str).is_some(),
+            "exception entry should include a message string"
+        );
+    }
+}
+
+#[test]
+fn fixture_tail_events_match_expected_shape() {
+    let fixtures = [
+        (
+            include_str!("fixtures/dirtsignal-canceled-queue.json"),
+            "dirtsignal",
+        ),
+        (
+            include_str!("fixtures/dirtsignal-queue-log.json"),
+            "dirtsignal",
+        ),
+        (
+            include_str!("fixtures/dirtsignal-exceeded-memory.json"),
+            "dirtsignal",
+        ),
+        (
+            include_str!("fixtures/worker-exception.json"),
+            "fixture-worker",
+        ),
+    ];
+
+    for (raw, script) in fixtures {
+        let event: Value = serde_json::from_str(raw).expect("fixture is JSON");
+        assert_tail_event_shape(&event, script);
+    }
+}
+
 #[test]
 fn emits_live_events_with_script_name_when_configured() {
     let Some((account_id, api_token, script)) = live_env() else {
@@ -80,10 +174,7 @@ fn emits_live_events_with_script_name_when_configured() {
     };
     let _ = child.kill();
     let event: Value = serde_json::from_str(&line).expect("event is JSON");
-    assert_eq!(
-        event.get("scriptName").and_then(Value::as_str),
-        Some(script.as_str())
-    );
+    assert_tail_event_shape(&event, script.as_str());
 }
 
 #[tokio::test]

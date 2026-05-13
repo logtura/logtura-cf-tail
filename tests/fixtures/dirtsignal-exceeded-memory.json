@@ -1,0 +1,25 @@
+{
+  "scriptName": "dirtsignal",
+  "outcome": "exceededMemory",
+  "eventTimestamp": 1778635560000,
+  "event": {
+    "batchSize": 1,
+    "queue": "dirtsignal-ingestion"
+  },
+  "logs": [
+    {
+      "level": "info",
+      "message": [
+        "[ingest:enqueue]",
+        {
+          "delaySeconds": 300,
+          "pipeline": "acclaim",
+          "runId": "run_9fbJyF2TKJq1Hbe",
+          "step": "run"
+        }
+      ],
+      "timestamp": 1778635560001
+    }
+  ],
+  "exceptions": []
+}

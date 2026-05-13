@@ -1,0 +1,11 @@
+{
+  "scriptName": "dirtsignal",
+  "outcome": "canceled",
+  "eventTimestamp": 1778632023059,
+  "event": {
+    "batchSize": 1,
+    "queue": "dirtsignal-ingestion"
+  },
+  "logs": [],
+  "exceptions": []
+}
